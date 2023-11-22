@@ -3,6 +3,7 @@ import * as crypyo from 'crypto'
 import fs from 'fs'
 import { Agent } from 'https';
 import type { ReadableStream } from 'node:stream/web';
+import path from 'path';
 
 enum SberSaluteClientScope {
     SALUTE_SPEECH_CORP = 'SALUTE_SPEECH_CORP',
@@ -95,7 +96,7 @@ class SberSaluteClient {
         this.clientSecret = settings.clientSecret;
         this.scope = settings.scope || SberSaluteClientScope.SALUTE_SPEECH_PERS;
         this.agent = settings.httpsAgent || (new Agent({
-            ca: fs.readFileSync(settings.certPath || './russian_trusted_root_ca.pem', { encoding: null }),
+            ca: fs.readFileSync(settings.certPath || path.join(path.resolve(__dirname, '../'), 'russian_trusted_root_ca.pem'), { encoding: null }),
         }));
     }
 

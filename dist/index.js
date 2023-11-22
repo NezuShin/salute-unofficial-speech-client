@@ -47,6 +47,7 @@ const axios_1 = __importDefault(require("axios"));
 const crypyo = __importStar(require("crypto"));
 const fs_1 = __importDefault(require("fs"));
 const https_1 = require("https");
+const path_1 = __importDefault(require("path"));
 var SberSaluteClientScope;
 (function (SberSaluteClientScope) {
     SberSaluteClientScope["SALUTE_SPEECH_CORP"] = "SALUTE_SPEECH_CORP";
@@ -102,7 +103,7 @@ class SberSaluteClient {
         this.clientSecret = settings.clientSecret;
         this.scope = settings.scope || SberSaluteClientScope.SALUTE_SPEECH_PERS;
         this.agent = settings.httpsAgent || (new https_1.Agent({
-            ca: fs_1.default.readFileSync(settings.certPath || './russian_trusted_root_ca.pem', { encoding: null }),
+            ca: fs_1.default.readFileSync(settings.certPath || path_1.default.join(path_1.default.resolve(__dirname, '../'), 'russian_trusted_root_ca.pem'), { encoding: null }),
         }));
     }
     login() {
