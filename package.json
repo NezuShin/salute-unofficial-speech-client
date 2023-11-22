@@ -1,0 +1,21 @@
+{
+  "name": "salute-unofficial-speech-client",
+  "version": "1.0.0",
+  "description": "Simple wrapper between nodejs and sber.ru http api",
+  "main": "dist/index.js",
+  "scripts": {},
+  "keywords": [
+    "Salute",
+    "SaluteSpeech",
+    "Sber",
+    "TTS",
+    "STT"
+  ],
+  "author": "NezuShin",
+  "devDependencies": {
+    "@types/node": "^20.9.4"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  }
+}
