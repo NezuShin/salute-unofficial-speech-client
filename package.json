@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Simple wrapper between nodejs and sber.ru http api",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {},
   "keywords": [
     "Salute",
