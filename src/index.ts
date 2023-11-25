@@ -101,7 +101,7 @@ class SberSaluteClient {
     }
 
     public async login() {
-        if (!!this.token && this.token.expires_at < Date.now()) {
+        if (!!this.token && this.token.expires_at > Date.now()) {
             return;
         }
 

@@ -108,7 +108,7 @@ class SberSaluteClient {
     }
     login() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!!this.token && this.token.expires_at < Date.now()) {
+            if (!!this.token && this.token.expires_at > Date.now()) {
                 return;
             }
             let response = yield (0, axios_1.default)({
