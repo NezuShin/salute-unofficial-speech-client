@@ -1,8 +1,6 @@
 /// <reference types="node" />
 /// <reference types="node" />
-/// <reference types="node" />
 import { Agent } from 'https';
-import type { ReadableStream } from 'node:stream/web';
 declare enum SberSaluteClientScope {
     SALUTE_SPEECH_CORP = "SALUTE_SPEECH_CORP",
     SALUTE_SPEECH_PERS = "SALUTE_SPEECH_PERS"

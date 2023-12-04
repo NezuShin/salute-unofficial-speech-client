@@ -2,8 +2,9 @@ import axios from 'axios';
 import * as crypyo from 'crypto'
 import fs from 'fs'
 import { Agent } from 'https';
-import type { ReadableStream } from 'node:stream/web';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import path from 'path';
+import { Readable } from 'stream';
 
 enum SberSaluteClientScope {
     SALUTE_SPEECH_CORP = 'SALUTE_SPEECH_CORP',
@@ -138,9 +139,9 @@ class SberSaluteClient {
             data: text,
             responseType: 'stream'
         });
+        
 
-
-        return response.data as (ReadableStream<Buffer>);
+        return Readable.toWeb(response.data) as (ReadableStream<Buffer>);
     }
 
     public async synthesize(textFormat: TextFormat, audioFormat: TTSAudioFormat, voice: TTSVoice, text: string): Promise<Buffer> {
@@ -148,7 +149,7 @@ class SberSaluteClient {
 
         let stream = await this.streamingSynthesize(textFormat, audioFormat, voice, text);
 
-        for await (let i of stream) {
+        for await (let i of (stream as NodeReadableStream<Buffer>)) {
             arr.push(i);
         }
 
