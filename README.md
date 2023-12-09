@@ -12,7 +12,9 @@ const client = new SberSaluteClient({
 
 (async () => {
 
-    let audio = await client.synthesize('application/text', 'wav16', 'Bys_24000', 'Hello. It is example!');
+    let audio = await client.synthesize('Hello. It is example!', {
+        voice: 'Bys_24000'
+    });
 
     fs.writeFileSync('./audio.wav', audio, {encoding: null});
 })();
@@ -28,8 +30,10 @@ const client = new SberSaluteClient({
 
 (async () => {
 
-    let audio = await client.streamingSynthesize('application/text', 'wav16', 'Bys_24000', 'Hello. It is example!');
-
+    let audio = await client.streamingSynthesize('Hello. It is example!', {
+        voice: 'Bys_24000'
+    });
+    
     for await (let audioChunk of audio){
         console.log(`Got chunk with length ${audioChunk.length}`)
         fs.appendFileSync('./audio.wav', audioChunk, {encoding: null});

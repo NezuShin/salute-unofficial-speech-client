@@ -22,6 +22,22 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -82,95 +98,114 @@ var STTAudioFormat;
     STTAudioFormat["mulaw"] = "audio/pcmu";
 })(STTAudioFormat || (exports.STTAudioFormat = STTAudioFormat = {}));
 class SberSaluteClient {
-    clientSecret;
-    scope;
-    token;
-    agent;
     constructor(settings) {
+        this.typesNeedRate = ['audio/x-pcm', 'audio/pcma', 'audio/pcmu'];
+        this.typesNeedBitDepth = ['audio/x-pcm'];
         this.clientSecret = settings.clientSecret;
         this.scope = settings.scope || SberSaluteClientScope.SALUTE_SPEECH_PERS;
         this.agent = settings.httpsAgent || (new https_1.Agent({
             ca: fs_1.default.readFileSync(settings.certPath || path_1.default.join(path_1.default.resolve(__dirname, '../'), 'russian_trusted_root_ca.pem'), { encoding: null }),
         }));
     }
-    async login() {
-        if (!!this.token && this.token.expires_at > Date.now()) {
-            return;
-        }
-        let response = await (0, axios_1.default)({
-            method: 'post',
-            httpsAgent: this.agent,
-            url: 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
-            headers: {
-                'RqUID': crypyo.randomUUID(),
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${this.clientSecret}`
-            },
-            data: `scope=${this.scope}`
+    login() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!!this.token && this.token.expires_at > Date.now()) {
+                return;
+            }
+            let response = yield (0, axios_1.default)({
+                method: 'post',
+                httpsAgent: this.agent,
+                url: 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
+                headers: {
+                    'RqUID': crypyo.randomUUID(),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${this.clientSecret}`
+                },
+                data: `scope=${this.scope}`
+            });
+            this.token = response.data;
         });
-        this.token = response.data;
     }
-    async streamingSynthesize(textFormat, audioFormat, voice, text) {
-        await this.login();
-        let response = await (0, axios_1.default)({
-            method: 'post',
-            httpsAgent: this.agent,
-            url: 'https://smartspeech.sber.ru/rest/v1/text:synthesize',
-            headers: {
-                'Authorization': `Bearer ${this.token?.access_token}`,
-                'Content-Type': `${textFormat}`
-            },
-            params: {
-                format: audioFormat,
-                voice: voice
-            },
-            data: text,
-            responseType: 'stream'
+    streamingSynthesize(text, synthesizeSettings) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.login();
+            let response = yield (0, axios_1.default)({
+                method: 'post',
+                httpsAgent: this.agent,
+                url: 'https://smartspeech.sber.ru/rest/v1/text:synthesize',
+                headers: {
+                    'Authorization': `Bearer ${(_a = this.token) === null || _a === void 0 ? void 0 : _a.access_token}`,
+                    'Content-Type': `${synthesizeSettings.textFormat || TextFormat.text}`
+                },
+                params: {
+                    format: synthesizeSettings.audioFormat || TTSAudioFormat.wav16,
+                    voice: synthesizeSettings.voice
+                },
+                data: text,
+                responseType: 'stream'
+            });
+            return stream_1.Readable.toWeb(response.data);
         });
-        return stream_1.Readable.toWeb(response.data);
     }
-    async synthesize(textFormat, audioFormat, voice, text) {
-        let arr = [];
-        let stream = await this.streamingSynthesize(textFormat, audioFormat, voice, text);
-        for await (let i of stream) {
-            arr.push(i);
-        }
-        return Buffer.concat(arr);
-    }
-    typesNeedRate = ['audio/x-pcm', 'audio/pcma', 'audio/pcmu'];
-    typesNeedBitDepth = ['audio/x-pcm'];
-    async recognize(audioData, audioSettings) {
-        await this.login();
-        let audioFormat = audioSettings.audioFormat;
-        let audioFormatStr = audioFormat;
-        if (this.typesNeedRate.includes(audioFormat)) {
-            if (!audioSettings.sampleRate)
-                throw new Error(`Audio type ${audioFormat} requires configure sampleRate, but it missing in settings`);
-            audioFormatStr += `;rate=${audioSettings.sampleRate}`;
-        }
-        if (this.typesNeedBitDepth.includes(audioFormat)) {
-            if (!audioSettings.bitDepth)
-                throw new Error(`Audio type ${audioFormat} requires configure bitDepth, but it missing in settings`);
-            audioFormatStr += `;bit=${audioSettings.bitDepth}`;
-        }
-        let response = await (0, axios_1.default)({
-            method: 'post',
-            httpsAgent: this.agent,
-            url: 'https://smartspeech.sber.ru/rest/v1/speech:recognize',
-            params: {
-                language: audioSettings.language,
-                sample_rate: audioSettings.sampleRate,
-                enable_profanity_filter: audioSettings.enableProfanityFilter || false,
-                channels_count: audioSettings.channelsCount || 1
-            },
-            headers: {
-                'Authorization': `Bearer ${this.token?.access_token}`,
-                'Content-Type': `${audioFormatStr}`
-            },
-            data: audioData,
-            responseType: 'json'
+    synthesize(text, synthesizeSettings) {
+        var _a, e_1, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            let arr = [];
+            let stream = yield this.streamingSynthesize(text, synthesizeSettings);
+            try {
+                for (var _d = true, _e = __asyncValues(stream), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    let i = _c;
+                    arr.push(i);
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            return Buffer.concat(arr);
         });
-        return response.data;
+    }
+    recognize(audioData, audioSettings) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.login();
+            let audioFormat = audioSettings.audioFormat;
+            let audioFormatStr = audioFormat;
+            if (this.typesNeedRate.includes(audioFormat)) {
+                if (!audioSettings.sampleRate)
+                    throw new Error(`Audio type ${audioFormat} requires configure sampleRate, but it missing in settings`);
+                audioFormatStr += `;rate=${audioSettings.sampleRate}`;
+            }
+            if (this.typesNeedBitDepth.includes(audioFormat)) {
+                if (!audioSettings.bitDepth)
+                    throw new Error(`Audio type ${audioFormat} requires configure bitDepth, but it missing in settings`);
+                audioFormatStr += `;bit=${audioSettings.bitDepth}`;
+            }
+            let response = yield (0, axios_1.default)({
+                method: 'post',
+                httpsAgent: this.agent,
+                url: 'https://smartspeech.sber.ru/rest/v1/speech:recognize',
+                params: {
+                    language: audioSettings.language,
+                    sample_rate: audioSettings.sampleRate,
+                    enable_profanity_filter: audioSettings.enableProfanityFilter || false,
+                    channels_count: audioSettings.channelsCount || 1
+                },
+                headers: {
+                    'Authorization': `Bearer ${(_a = this.token) === null || _a === void 0 ? void 0 : _a.access_token}`,
+                    'Content-Type': `${audioFormatStr}`
+                },
+                data: audioData,
+                responseType: 'json'
+            });
+            return response.data;
+        });
     }
 }
 exports.SberSaluteClient = SberSaluteClient;

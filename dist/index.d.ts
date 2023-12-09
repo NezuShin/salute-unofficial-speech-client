@@ -67,6 +67,11 @@ interface SaluteSTTSettings {
     audioFormat: STTAudioFormat;
     bitDepth?: number;
 }
+interface SaluteTTSSettings {
+    textFormat?: TextFormat;
+    audioFormat?: TTSAudioFormat;
+    voice: TTSVoice;
+}
 declare class SberSaluteClient {
     private clientSecret;
     private scope;
@@ -74,8 +79,8 @@ declare class SberSaluteClient {
     private agent;
     constructor(settings: SberSaluteClientSettings);
     login(): Promise<void>;
-    streamingSynthesize(textFormat: TextFormat, audioFormat: TTSAudioFormat, voice: TTSVoice, text: string): Promise<ReadableStream<Buffer>>;
-    synthesize(textFormat: TextFormat, audioFormat: TTSAudioFormat, voice: TTSVoice, text: string): Promise<Buffer>;
+    streamingSynthesize(text: string, synthesizeSettings: SaluteTTSSettings): Promise<ReadableStream<Buffer>>;
+    synthesize(text: string, synthesizeSettings: SaluteTTSSettings): Promise<Buffer>;
     private typesNeedRate;
     private typesNeedBitDepth;
     recognize(audioData: Buffer, audioSettings: SaluteSTTSettings): Promise<SaluteSTTOutput>;

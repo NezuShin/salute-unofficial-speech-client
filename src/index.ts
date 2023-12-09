@@ -87,6 +87,12 @@ interface SaluteSTTSettings {
     bitDepth?: number,
 }
 
+interface SaluteTTSSettings {
+    textFormat?: TextFormat,
+    audioFormat?: TTSAudioFormat,
+    voice: TTSVoice
+}
+
 class SberSaluteClient {
 
     private clientSecret: string;
@@ -121,7 +127,7 @@ class SberSaluteClient {
         this.token = response.data as SaluteToken;
     }
 
-    public async streamingSynthesize(textFormat: TextFormat, audioFormat: TTSAudioFormat, voice: TTSVoice, text: string): Promise<ReadableStream<Buffer>> {
+    public async streamingSynthesize(text: string, synthesizeSettings: SaluteTTSSettings): Promise<ReadableStream<Buffer>> {
         await this.login();
 
         let response = await axios({
@@ -130,24 +136,24 @@ class SberSaluteClient {
             url: 'https://smartspeech.sber.ru/rest/v1/text:synthesize',
             headers: {
                 'Authorization': `Bearer ${this.token?.access_token}`,
-                'Content-Type': `${textFormat}`
+                'Content-Type': `${synthesizeSettings.textFormat || TextFormat.text}`
             },
             params: {
-                format: audioFormat,
-                voice: voice
+                format: synthesizeSettings.audioFormat || TTSAudioFormat.wav16,
+                voice: synthesizeSettings.voice
             },
             data: text,
             responseType: 'stream'
         });
-        
+
 
         return Readable.toWeb(response.data) as (ReadableStream<Buffer>);
     }
 
-    public async synthesize(textFormat: TextFormat, audioFormat: TTSAudioFormat, voice: TTSVoice, text: string): Promise<Buffer> {
+    public async synthesize(text: string, synthesizeSettings: SaluteTTSSettings): Promise<Buffer> {
         let arr: Buffer[] = [];
 
-        let stream = await this.streamingSynthesize(textFormat, audioFormat, voice, text);
+        let stream = await this.streamingSynthesize(text, synthesizeSettings);
 
         for await (let i of (stream as NodeReadableStream<Buffer>)) {
             arr.push(i);
